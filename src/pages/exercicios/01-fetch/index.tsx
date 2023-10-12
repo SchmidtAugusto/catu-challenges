@@ -1,6 +1,6 @@
 import { Divider, Typography } from '@mui/material';
-import Head from 'next/head';
-import Pedido from '@/components/exercicio-01/Pedido';
+import { useState, useEffect } from 'react';
+import Head from 'next/head'; import Pedido from '@/components/exercicio-01/Pedido';
 
 /**
  * @/pages/exercicios/01-fetch
