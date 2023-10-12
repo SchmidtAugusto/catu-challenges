@@ -8,11 +8,24 @@ import {
 } from '@mui/icons-material';
 
 const Usuarios = () => {
+
+  const [sort, setSort] = useState('Asc');
+  const [sortColumn, setSortColumn] = useState('id');
+  const handleSort = (column: string) => {
+    if (column === sortColumn) {
+      setSort(sort === 'Asc' ? 'Desc' : 'Asc');
+    } else {
+      setSortColumn(column);
+      setSort('Asc');
+    }
+  };
+
+
   const [usuarios, setUsuarios] = useState<Array<any>>([]);
 
   function fetchUsuarios() {
-    fetch('/api/usuarios')
-      .then((res) => res.json())
+    fetch(`/api/usuarios?page=${currentPage}&order_by=${sortColumn}&order=${sort}`)
+    .then((res) => res.json())
       .then((data) => setUsuarios(data?.results || []));
   }
 
@@ -131,10 +144,32 @@ const Usuarios = () => {
     }
   ];
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const nextPage = () => {
+    setCurrentPage(currentPage + 1);
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + (itemsPerPage - 1);
+  const usersToDisplay = usuarios.slice(startIndex, endIndex);
+
   return (
     <>
       <Grid container spacing={2}>
         <Grid item xs={12} sx={{ overflowX: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between'}}>
+            <button onClick={prevPage} disabled={currentPage === 1}> Página Anterior </button>
+
+            <button onClick={nextPage} disabled={endIndex >= usuarios.length}> Próxima Página</button>
+          </div>
           {usuarios?.length === 0 && <Typography>Nenhum usuário</Typography>}
           {usuarios?.length > 0 && (
             <DataTable
@@ -142,11 +177,9 @@ const Usuarios = () => {
               sx={{ width: 'max-content' }}
               columns={columns}
               data={usuarios}
-              onSort={(sortableName) => {
-                // 🤔
-              }}
-              sortBy={'id'}
-              sortOrder={'asc'}
+              onSort={handleSort}
+              sortBy={sortColumn}
+              sortOrder={sort}
             />
           )}
         </Grid>

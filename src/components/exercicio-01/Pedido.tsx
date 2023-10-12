@@ -6,7 +6,7 @@ const Pedido = () => {
   const [pedidoData, setPedidoData] = useState(null);
 
 
-  useEffect(() => {
+
   function fetchPedido() {
     fetch('/api/pedido')
       .then((response) => response.json())
@@ -15,7 +15,8 @@ const Pedido = () => {
       });
   }
 
-  fetchPedido();
+  useEffect(() => {
+    fetchPedido();
   }, []);
 
 if (pedidoData) {

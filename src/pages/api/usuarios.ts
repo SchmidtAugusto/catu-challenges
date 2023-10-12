@@ -41,7 +41,7 @@ const requestHandler = (req: NextApiRequest, res: NextApiResponse) => {
     }
   });
 
-  const resultsData = userData.splice(sliceStart, sliceEnd);
+  const resultsData = userData.slice(sliceStart, sliceEnd);
 
   res.status(200).json({
     results: resultsData,
