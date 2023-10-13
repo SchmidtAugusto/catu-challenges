@@ -5,7 +5,10 @@ import UserData from '@/pages/api/usuarios.json';
  * Seu desafio full stack também passa por aqui! 👀
  */
 const requestHandler = (req: NextApiRequest, res: NextApiResponse) => {
+
   const { query } = req;
+
+  let search: string | null = `${query?.search}`.toLowerCase();
 
   let page: number = parseInt(`${query?.page}`);
   page = isNaN(page) ? 1 : page;

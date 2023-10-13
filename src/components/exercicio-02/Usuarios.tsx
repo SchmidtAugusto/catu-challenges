@@ -1,4 +1,4 @@
-import { Box, Chip, Grid, Typography } from '@mui/material';
+import { Box, Chip, Grid, Typography, Button, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import DataTable, { DataTableColumn } from '../elements/DataTable';
 import {
@@ -8,30 +8,52 @@ import {
 } from '@mui/icons-material';
 
 const Usuarios = () => {
+  const [usuarios, setUsuarios] = useState<Array<any>>([]);
+  const [maxPageSize, setMaxPageSize] = useState(0);
+  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState({
+    page: 1,
+    order: 'asc',
+    order_by: 'id',
+    page_size: 10,
+  })
 
-  const [sort, setSort] = useState('Asc');
-  const [sortColumn, setSortColumn] = useState('id');
-  const handleSort = (column: string) => {
-    if (column === sortColumn) {
-      setSort(sort === 'Asc' ? 'Desc' : 'Asc');
-    } else {
-      setSortColumn(column);
-      setSort('Asc');
-    }
+
+
+  const handleSort = (column: string | undefined) => {
+      setFilters({
+        ...filters,
+        order: filters.order === 'asc' ? 'desc' : 'asc',
+        order_by: typeof column === "string" ? column : ""
+      })
   };
 
 
-  const [usuarios, setUsuarios] = useState<Array<any>>([]);
+  async function fetchUsuarios() {
+    const { page, order, order_by, page_size } = filters
+    const url = `http://localhost:3000/api/usuarios?page=${page}&order=${order}&order_by=${order_by}&page_size=${page_size}`
+    console.log(url)
+    try {
+      const request = await fetch(url)
+      const requestParsed = await request.json()
+      const {results, total_results} = requestParsed
+      setUsuarios(search(results))
+      calculateMaxPage(query === "" ? total_results : 1)
+    } catch(error) {
+      console.error(error)
+    }
+  }
 
-  function fetchUsuarios() {
-    fetch(`/api/usuarios?page=${currentPage}&order_by=${sortColumn}&order=${sort}`)
-    .then((res) => res.json())
-      .then((data) => setUsuarios(data?.results || []));
+  const search = (data: any) => {
+    return data.filter((item: any) =>
+      item.name.toLowerCase().includes(query) |
+      item.surname.toLowerCase().includes(query)
+    )
   }
 
   useEffect(() => {
     fetchUsuarios();
-  }, []);
+  }, [filters, query]);
 
   const columns: Array<DataTableColumn> = [
     {
@@ -47,6 +69,8 @@ const Usuarios = () => {
     {
       title: 'Nome',
       render: (data) => <Typography>{data.name}</Typography>,
+      sortable: true,
+      sortableName: 'name',
       config: {
         width: 200,
         align: 'center'
@@ -55,6 +79,8 @@ const Usuarios = () => {
     {
       title: 'Sobrenome',
       render: (data) => <Typography>{data.surname}</Typography>,
+      sortable: true,
+      sortableName: 'surname',
       config: {
         width: 200,
         align: 'center'
@@ -63,6 +89,8 @@ const Usuarios = () => {
     {
       title: 'Idade',
       render: (data) => <Typography>{data.age}</Typography>,
+      sortable: true,
+      sortableName: 'age',
       config: {
         width: 80,
         align: 'center'
@@ -70,6 +98,8 @@ const Usuarios = () => {
     },
     {
       title: 'Nascimento',
+      sortable: true,
+      sortableName: 'birthday',
       render: (data) => {
         const date = new Date(data.birthday);
 
@@ -144,32 +174,52 @@ const Usuarios = () => {
     }
   ];
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
-  const nextPage = () => {
-    setCurrentPage(currentPage + 1);
+  const handleNextPage = () => {
+    setFilters({
+      ...filters,
+      page: filters.page + 1
+    })
   };
 
-  const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  const handlePrevPage = () => {
+    if (filters.page > 1) {
+      setFilters({
+        ...filters,
+        page: filters.page - 1
+      })
     }
   };
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + (itemsPerPage - 1);
-  const usersToDisplay = usuarios.slice(startIndex, endIndex);
+  const calculateMaxPage = (totalResults: number) => {
+    let maxPage = Math.ceil(totalResults / filters.page_size)
+    console.log(maxPage)
+    setMaxPageSize(maxPage)
+  }
 
   return (
     <>
       <Grid container spacing={2}>
         <Grid item xs={12} sx={{ overflowX: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between'}}>
-            <button onClick={prevPage} disabled={currentPage === 1}> Página Anterior </button>
-
-            <button onClick={nextPage} disabled={endIndex >= usuarios.length}> Próxima Página</button>
-          </div>
+          <Box component="form" sx={{
+            '& .MuiTextField-root': {
+            m: 1, width: '25ch' },}}
+            noValidate
+            autoComplete="off">
+            <div>
+              <TextField
+                onChange={(e) => setQuery(e.target.value)}
+                label="Search"
+                id="outlined-size-small"
+                defaultValue=""
+                size="small"/>
+            </div>
+          </Box>
+          <Box sx={{display: 'flex', justifyContent: 'space-between'}} >
+            <Button  onClick={handlePrevPage} disabled={filters.page === 1}> Página Anterior </Button>
+            <Typography>{`${filters.page}/${maxPageSize}`}</Typography>
+            <Button onClick={handleNextPage} disabled={filters.page === maxPageSize}> Próxima Página</Button>
+          </Box>
           {usuarios?.length === 0 && <Typography>Nenhum usuário</Typography>}
           {usuarios?.length > 0 && (
             <DataTable
@@ -178,8 +228,8 @@ const Usuarios = () => {
               columns={columns}
               data={usuarios}
               onSort={handleSort}
-              sortBy={sortColumn}
-              sortOrder={sort}
+              sortBy={filters.order_by}
+              sortOrder={filters.order}
             />
           )}
         </Grid>
